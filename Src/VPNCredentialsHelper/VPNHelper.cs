@@ -21,7 +21,8 @@ namespace VPNCredentialsHelper
             None = 0x0,
             UserName = 0x1,
             Password = 0x2,
-            Domain = 0x4
+            Domain = 0x4,
+            PreSharedKey = 0x10,
         }
 
         [DllImport("rasapi32.dll", CharSet = CharSet.Unicode)]
@@ -50,10 +51,8 @@ namespace VPNCredentialsHelper
             IntPtr lpCredentials,
             [MarshalAs(UnmanagedType.Bool)] bool fClearCredentials);
 
-        public static bool SetCredentials(string entryName, string domain, string username, string password)
+        private static bool _SetRasCredentials(string entryName, RASCREDENTIALS credentials)
         {
-            var credentials = new RASCREDENTIALS() { userName = username, password = password, domain = domain ?? string.Empty, options = RASCM.Domain | RASCM.UserName | RASCM.Password };
-
             int size = Marshal.SizeOf(typeof(RASCREDENTIALS));
 
             IntPtr pCredentials = IntPtr.Zero;
@@ -83,6 +82,18 @@ namespace VPNCredentialsHelper
                     Marshal.FreeHGlobal(pCredentials);
                 }
             }
+        }
+
+        public static bool SetCredentials(string entryName, string domain, string username, string password)
+        {
+            var credentials = new RASCREDENTIALS() { userName = username, password = password, domain = domain ?? string.Empty, options = RASCM.Domain | RASCM.UserName | RASCM.Password };
+            return _SetRasCredentials(entryName, credentials);
+        }
+
+        public static bool SetPreSharedKey(string entryName, string presharedkey)
+        {
+            var credentials = new RASCREDENTIALS() { userName = string.Empty, password = presharedkey, domain = string.Empty, options = RASCM.PreSharedKey };
+            return _SetRasCredentials(entryName, credentials);
         }
 
         private static Exception ProcessRASException(int errorCode)
